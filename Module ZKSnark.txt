@@ -1,0 +1,71 @@
+ZKSnark
+
+
+# Basic
+zk-SNARK là loại NIZK phổ biến nhất, tạo proof kích thước nhỏ, k tương tác, và thời gian verify nhanh dù mạch có lớn đến mấy (build lâu)
+ZKSnark chứa 3 hàm: 
+Generator G(secret lamba, program C) = (proving key pk, verification key vk) => Nó là đặc trưng của mạch C và chỉ cần generate 1 lần
+Prover P(pk, public input x, private witness w) = proof prf chứng minh private witness w là thỏa mãn 
+Verifier V(vk, public input x, proof prf) = true/false
+
+Vấn đề: dù k hiểu nhưng secret lamba dùng trong G nếu để lộ, người khác sẽ tạo ra được fakeproof để V(vk, public input x, fakeproof) luôn bằng true. Do đó tham số này được sinh random và che giấu, qtr sinh key cũng được làm cho rất phức tạp.
+
+-> VD1 klq tới blockchain: Alice chứng minh rằng sở hữu w mà Hash(w) = x cho Bob.
+function C(x, w) {
+  return ( sha256(w) == x );
+}
+Bob sinh key: (pk, vk) = G(C, lambda) và che dấu lamba vì nếu lộ, Alice sẽ tạo ra fakeproof mà Bob verify luôn ra true
+Alice sinh proof: prf = P(pk, x, w)
+Bob xác thực bằng V(vk, x, prf) = true là được
+Nếu Bob sở hữu w2 mà Hash(w2) = x2 thì k thể tái sử dụng (pk, vk) như trên được vì Alice k tin Bob có thể lưu lamba ở đâu đó. Khi đó Alice lại phải sinh 1 mạch nx. Cách khác để tái sử dụng sẽ phải tin 1 bên thứ 3 cung (pk, vk).
+
+Thực tế, việc sinh 2 key được làm offchain và lamba được che giấu hoàn toàn khi dùng thư viện đến cả người sinh key cũng chả biết. Gọi là zkey và verification_key
+Prover tạo bằng chứng offchain. SM onchain chính là verifier có hàm xác thực và perform các action tương ứng.
+
+-> VD: Confidential Transactions là transaction mà k lộ khoản tiền giao dịch.
+Tạo 1 token ERC20 lưu balance nhưng k ai check được balance, bằng cách dùng: mapping (address => bytes32) balanceHashes; thay vì mapping (address => uint256) balances;
+A chuyển tiền cho B: contract phải check A đủ balance rồi update balance của 2 người nhưng k thể thấy balance mà chỉ thấy hash. Do đó cần check balance bằng ZKSnark.
+URL: https://consensys.net/blog/developers/introduction-to-zk-snarks/ implement chưa chuẩn
+=> Zama Chain dùng Fully Homomorphic Encryption (FHE) có thể implement chuẩn confidential transaction mà k cần ZK
+
+-> Lịch sử:
+VD: Kil92 là 1 giao thức interactive cũ giúp chia sẻ secret trong môi trường k đáng tin cậy. VD có 1000 verifier thì phải tương tác 1000 người sinh 1000 proof khác nhau
+Random Oracle là 1 hàm băm ngẫu nhiên hoàn hảo. VĐ là cần loại bỏ sự phụ thuộc của RO trong thiết kế mật mã như việc dùng các thuật toán khác như non-interactive.
+
+Non-interactive tức Prover tạo ra bằng chứng và bất cứ Verifier nào vào verify thoải mái. Quá trình sinh proof độc lập với verifier. Vấn đề là họ muốn tối ưu hóa proof.
+
+Succinct Non-interactive ARgument of Knowledge (SNARK): Proof ngắn vì chỉ cần 1 interaction round với data public khi verifier gửi cho prover cái proving key để họ sinh proof. Proving key là crs (common reference string). Nhược điểm là verifier phải pre-processing ở bước Generator (provingkey, verificationkey) - Trusted setup.
+Zero-knowledge SNARK: thêm tính chất zero knowledge nữa
+
+
+
+# Cơ chế
+-> SAT circuit: Boolean satisfiablitiy circuit check input có thỏa mãn 1 công thức boolean không. 
+
+Mạch SAT rất phức tạp để xử lý các đk phức tạp, witness quá dài. Giải pháp là cho giải 1 phương trình polynomial tương đương.
+VD: Mạch nhận input x thỏa mãn cho ra output y. Prover cần chứng minh mình có x mà thỏa mãn mạch y = f(x). Ta k tìm x nữa mà quy về tìm 1 polynomial dạng: P(x) = p1x1 + p2x2 + ... => chung quy là tìm dãy (p0, p1, p2, ...) sao cho P(x)t(x) = v(x)
+Dãy (p0, p1, p2, ...) quá dài nếu mạch phức tạp, do đó verifier gửi thêm 1 evaluation point s tới prover, prover tính ra P(s), r gửi lại P(s) là được. Bởi vì nếu ko biết đa thức P(x) sẽ k thể tính được giá trị tại điểm s là P(s). Nhưng ta đang cần chứng minh mình sở hữu (p0, p1, p2, ...) mà k để lộ dãy này. Để tăng bảo mật, họ không gửi trực tiếp giá trị P(s) mà sẽ ẩn đi bằng cách gửi hàm hash của nó, gọi là P'(s). Nhưng để an toàn hơn nữa, họ mã hóa điểm đánh giá luôn. Có nhiều phương pháp mã hóa 1 điểm s, ký hiệu là Enc(s). Sau đó họ tính: Enc(P(s)) = p0*Enc(s^0) + p1*Enc(s^1) + p2*Enc(s^2) + ... và gửi lại Enc(P(s)) gọi là proof PI
+
+Non-falsifiable Assumption: Power Knowledge of Exponent hay d-PKE. Họ nâng cấp hơn nữa là:
+PI = Enc(P(s)) Enc(aP(s))
+Với Enc(aP(s)) = pi*Enc(a*s^i)
+
+Để verify, họ check Enc(aP(s)) = a*Enc(P(s)) và Enc(P(s)) * t(s) = v(s)
+
+-> Computational Model của SNARK
+1) Quadratic Arithmetic Programs(QAP) biểu diễn phần tính toán dưới dạng các phương trình bậc 2 trong finite field. Mỗi biến trong phương trình biểu diễn cho input, output, intermediate value of computation. Nó cho phép verify nhanh tính đúng đắn của việc tính toán mà k cần tính lại bằng cách check phương trình của QAP thỏa mãn. Nó vẽ bảng và sơ đồ của mạch với phép cộng và nhân ra như trong circom bth ấy
+
+2) Square Span Program (SSP) giúp xây zkSnark. Nó cũng biểu diễn việc tính toán bằng 1 tập các phương trình bậc 2. 
+Trong SSP, 1 computation biểu diễn bằng 1 tập vector trong finite field. Mỗi bước tính toán là 1 vector. Các vector được sắp xếp sao cho mỗi bước verify chỉ cần check tính trực giao của các cặp vector xác định. Nó biểu diễn mạch logic gồm các cổng AND OR thành các phương trình nhiều biến thôi.
+
+-> Encoding có 2 PP
+1) Dlog Encoding: dùng để biểu diễn encoded data tận dụng tính chất của Discrete Logarithm Problem (DLP). 
+Đó là bài toán encode biến x thành g^x với g là 1 generator bất kỳ trong group. Như đã biết trong Tornadol cash, generator là giá trị mà khi mũ lên liên tục sẽ có thể tạo hết được mọi giá trị trong tập prime field. Ở bài toán này thì biết g và g^x rất khó để truy ngược được x trong trường prime field.
+Encryption: Enc(p(s)) = g^(p(s))
+
+2) Encryption Scheme: Là PP mã hóa sao cho chỉ những partities xđ mói có thể đọc được. Có nhiều cách như dùng symmetric scheme or asymmetric scheme => dùng key bth
+VD encyrption asymmetric với Dsk là secret key và Epk là public key: Enc(p(s)) = Epk(p(s))
+
+-> Còn có Power Diffie-Hellman assumption là 1 assumption liên quan tới Diffie-Hellman problem. Nó là vấn đề tính toán share secret trong thuật toán trao đổi khóa Diffie-Hellman, mở rộng thành: cho g và g^x, g^y, g^z thì rất khó để tính giá trị của g^(x+y+z)
+
+

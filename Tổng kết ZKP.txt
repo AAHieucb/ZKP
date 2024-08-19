@@ -1,0 +1,83 @@
+ZKP
+
+
+# Basic
+-> Example: 
+"I know the private key that corresponds to this public key" : in this case, the proof would not reveal any information about the private key.
+"I know a private key that corresponds to a public key in this list" : as before, the proof would not reveal information about the private key but in this case, the associated public key of me would also remain private.
+"This is the hash of a blockchain block that does not produce negative balances" : in this case, the proof would not reveal any information about the amount, origin or destination of the transactions included in the block.
+
+-> Zk-Snark chứng minh 1 câu lệnh tính toán là đúng, nhưng nó k giải quyết vấn đề trực tiếp mà phải chuyển đổi về đúng dạng mạch số học.
+
+VD mạch số học F_p là 1 mạch gồm các sợi dây chứa giá trị từ trường F_p và nối với các cổng cộng và cổng nhân modulo p lại.
+1 mạch số học sẽ lấy vài tín hiệu làm input (0,...,p-1). Output của mọi cổng cộng và nhân gọi là intermediate signal, trừ cổng cuối là output signal. 
+Circom dùng số p rất lớn (10^80 cơ). Đó là thứ tự của trường vô hướng của B254 curve (EIP 196).
+Còn dùng order of the scalar field of the BLS12-381 và goldilocks prime dùng trong Plonky2
+1 mạch có các constraint phải là bậc 2, linear hoặc constant. Set of constraints gọi là rank-1 constraint system (R1CS). 
+Vc ZKSnark dùng mạch số học tạo sự đơn giản trong code, các protocol ZKP khác khó ỉa
+
+-> Thiết kế mạch:
+Witness mà người dùng cung vào mạch chỉ đơn giản chứng minh rằng ta biết 1 set of input thỏa mãn mạch mà thôi
+Mạch phải được thiết kế sao cho người dùng khác k thể tái tạo được mọi input từ R1CS + public input. Nếu tái tạo được thì mạch đó vô nghĩa
+=> Tránh hiểu lầm: params của function luôn là public, do đó buộc dùng zkp ở nhiều TH. User k thể decode ngược params do zksnark sinh ra, điều này đồng nghĩa zkp thực sự khiến cho blockchain k còn hoàn toàn public nhưng vẫn chứng minh được tính đúng đắn. Thực tế chỉ cần hash data phát là k public nữa ngay nhưng nhờ zkp nên vẫn chứng minh là hợp lệ được.
+
+
+
+# Basic
+Có nhiều phương pháp mở rộng blockchain: ZKRollups, Plasma, Payment Channel, Optimistic Rollups, State Channel
+VD: Optimism và Arbitrum One là 2 chain mở rộng tốc độ cao hơn sử dụng Optimistic Rollup. dYdX, Loopring dùng ZKRollup để đạt tốc độ cao.
+
+-> Phân biệt: ZK Rollup và Optimistic Rollup là 2 công nghệ độc lập. Optimistic Rollup sử dụng fraud proof. Còn ZKRollup sử dụng zero knowledge proof (valid proof).
+ZKSync là 1 hệ sinh thái sử dụng công nghệ ZkRollup. Bản thân zksync không phải 1 giải pháp mở rộng blockchain mà chỉ là 1 hệ sinh thái.
+Zero knowledge proof là kiểu bằng chứng mà ai cũng xác thực được nó là đúng dù không biết về nó. VD: Alice muốn chứng minh cho Bob rằng cô ấy có mật khẩu để mở một tài khoản mà không muốn tiết lộ mật khẩu đó cho Bob. Alice có thể sử dụng zero-knowledge proof để làm điều này.
+
+Optimism (OP) là layer2 của Ethereum. Arbitrum tương tự có ARB là coin nền tảng nhưng thanh toán gas bằng ETH. Nên mở ví metamask sẽ thấy lượng ETH có trong mạng. 
+2 chain này dùng giải pháp Optimistic Rollup kiểu tổng hợp nhiều transaction lại thành 1 cụm rồi gửi lên Ethereum, gom lại thành 1 transaction với phí gas rẻ hơn. 
+
+-> ZK-Rollup cuộn các tx trên sidechain thành 1 cục duy nhất và gửi lên Ethereum để xác thực. Nó tạo ra 1 bằng chứng ngắn gọn offchain rồi gửi lên Ethereum chỉ cần xác minh mỗi bằng chứng đó và update state luôn. 
+
+ZK-Rollup được xđ bởi 2 yếu tố: Data được lưu trữ onchain hay offchain; Zero knowledge scheme được sử dụng là gì => Tức là dù trải qua cách nào thì cơ chế nó vẫn như bên trên, chỉ là có các cách khác nhau để làm điều đó và họ đặt cho cái tên khác nhau
+1) Data được lưu trữ onchain gọi là ZK Rollup. Chi phí cao hơn, chậm hơn nhưng phân quyền tốt hơn. Data được lưu onchain tức nó phải nằm trên 1 blockchain độc lập như 1 sidechain chẳng hạn và bất cứ ai lấy lúc nào cũng được. 
+Data được lưu trữ offchain gọi là Validium. Nó được cung từ 1 central data provider host tập trung,, giá rẻ, tốc độ cao. Central data provider đó nắm toàn quyền về data. Còn lại cơ chế y hệt zkrollup vẫn thường dùng là thực hiện giao dịch offchain xong cung ra zero-knowledge để Ethereum gốc verify.
+2) Tạo zero knowledge dùng zk-SNARK(Succinct non-interactive argument of knowledge) được dùng phổ biến. Succinct(cô đọng) và Non-interactive(K tương tác) tạo ra proof có kích thước nhỏ và khả năng bảo mật kém hơn zk-STARK(nhưng vẫn bảo mật đủ tốt).
+Có nhiều dự án dùng như zkSync, Loopring, Hermez, Aztec, Polygon Zero
+Code circom là code mạch để sau đó dùng zkSnark sinh bằng chứng cho mạch, là 1 bước của zkRollup protocol mở rộng layer 2. Ta có thể tự nghĩ ra thuật toán sinh ZKP khác mà k dùng zkSNARK cũng được
+
+zk-STARK(Succinct transparent argument of knowledge) được Starware giới thiệu năm 2018 và ít phổ biến hơn. Cơ chế dùng hàm băm mã hóa chống bảo mật tốt nhưng kích thước proof lớn dẫn đên năng lượng và chi phí cao.
+Có dự án như StarkWare, Polygon Miden
+
+-> StarkWare và ZkSync
+1) StarkWare
+StarkWare không phải là 1 protocol mà là tên 1 công ty mẹ. Công ty này cung cấp khả năng mở rộng blockchain bằng công nghệ STARK để triển khai và xác thực zero knowledge proof - 1 bước trong zkrollup. StarkWare có 5 sản phẩm: Starknet, Skarkexm, Vedoo, Cairo, SHARP
+2) ZkSync: MatterLabs là 1 công ty cung cấp giải pháp mở rộng Ethereum bằng ZKP. 1 sản phẩm nổi tiếng là ZkSync - 1 protocol giúp dùng ZkRollup với zk-SNARK.
+
+zksync v1 là 1 chain layer 2 base trên Ethereum. Cơ chế tiền vẫn lưu trên SM onchain như bth nhưng việc tính toán và lưu trữ được thực hiện offchain. Chain này ứng dụng ZkRollup gom tx như bth và ở bước sinh bằng chứng thì sử dụng zk-SNARK thôi. zkSync v1 chỉ hỗ trợ vận chuyển ERC20 giá rẻ, NFT và 1 vài lệnh trade.
+
+zkSync 2.0 cải tiến với zkEVM với zkPorter
+- zkEVM là máy chủ ảo thực thi các SM tương thích với thuật toán ZKP. Trước đó Optimistic Rollup tương thích EVM rồi nhưng ZK Rollup thì chưa. zkEVM dùng công nghệ ZKPs để giữ thông tin giao dịch kín đáo. Các validator có thể xác minh tính hợp lệ của tx mà không cần biết chi tiết cụ thể về tx đó.
+- zkPorter: state layer 2 được chia làm 2 bên là zkRollup với onchain data availability và zkPorter với offchain data availability. Contract và tài khoản bên ZKRollup có thể tương tác với tk bên zkPorter và ngược lại. 
+VD layer 2 zksync 2.0 chia 2 nửa, Uniswap có SM trên nửa zkRollup và user với tk trên nửa zkPorter có thể swap với chi phí rẻ. Vì tk zkPorter có thể thực hiện nhiều tx rồi gom 1 lần update data lên Ethereum. Tức user đăng ký tk trên zkPorter để tạo nguồn data offchain có thể tương tác với SM ở nửa rollup với giá rẻ.
+=> v1 k hỗ trợ SM như v2. Ở v2 thì SM bị compiler chuyển đổi từ Solidity thành dạng tương thích với EVM và nguồn dữ liệu có sẵn offchain từ zkPorter.
+
+Full luồng: đầu tiên có contract solidity sẵn để tương tác với uniswap layer1. Compiler compile contract đó thành 1 dạng zkEVM tương thích với máy EVM và data offchain của zkporter. Người dùng tạo tk offchain trên zkporter và thực hiện 1000 tx giả lập tương tác với contract đó cx được. Sau đó họ có thể submit tx với giá rẻ. Giả sử họ đã có tk rồi swap 1000 lần offchain và chỉ gửi kết quả cuối lên layer2, tức chỉ thực hiện 1 tx trên contract đó để swap tiền trên uniswap layer1, layer2 zksync sẽ gom nhiều tx lại (1 tx của ta và nhiều tx khác) và sinh bằng chứng ZKP gửi lên ethereum layer1, layer1 xác thực và update state luôn mà k thực hiện lại logic.
+Full luồng 2: viết contract trên layer2 zksync, zkevm compile contract thành 1 dạng tương thích với EVM và data của zkporter, user đăng ký tk vào zkporter, user tương tác với contract ngay trên zkporter để thực hiện 1000 txt offchain, user submit tất cả lên layer2, zkEVM gom tất cả thành 1 tx duy nhất và che giấu logic và nó chỉ lộ ra state nào đổi từ đâu thành đâu, zkEVM sinh bằng chứng cho tất cả tx đó trong 1 lần rằng logic là hợp lệ, zkEVM submit bằng chứng và state mới lên layer1, layer1 verify bằng chứng và update state tương ứng chứ k cần qt logic
+=> Khi có xung đột vừa tương tác layer1, vừa tương tác layer2 thì bằng chứng bị k hợp lệ và lỗi thôi, sẽ có cơ chế revert.
+
+
+
+# Tổng quan
+Circom chỉ là code sinh ra mạch logic thôi
+iden3 là 1 thư viện cung các công cụ có sẵn hỗ trợ xây dựng DApps, có nhiều công cụ hơn là chỉ ZKP.
+Zk Snark là 1 công nghệ xây proof mà k lộ thông tin. Nó là 1 công nghệ nói chung chứ k nhất thiết cứ phải là sinh bằng chứng từ 1 mạch circom
+Groth là 1 phương pháp xây dựng bằng chứng NIZK (non-interactive zero knowledge) nằm trong zk Snark. NIZK thì verifier có thể xác thực độc lập mà k cần tương tác với người tạo ra bằng chứng, phù hợp với Ethereum vì chỉ tương tác với SM.
+SnarkJS là JS lib giúp implement zkSNARK, hỗ trợ dev trong việc sinh ZKP bằng code JS.
+ZKRollup nói chung là 1 phương pháp mở rộng layer 2, dùng ZKSnark để làm bước sinh bằng chứng cho nó.
+=> Tức ta cần dùng circom sinh mạch cho contract solidity, rồi dùng ZKRollup để cuộn com các giao dịch lại, rồi dùng ZKSnark sinh bằng chứng và gửi lên blockchain. 
+
+3 thuật toán generate và verify ZKP: Groth < Groth16 < Plonk khi so sánh kích thước proof và thời gian xác thực.
+Groth16 dùng thuật toán elliptic curve cryptography, phù hợp khi cần sinh nhiều proof cho cùng 1 mạch.
+Plonk phù hợp ứng dụng cần về hiệu suất cao. Nó dùng polynomial commitment schemes chuyển đổi đa thức thành tập evaluation point. Nó phù hợp khi cần xử lý nhiều mạch khác nhau. Groth 16 cần trusted ceremony cho từng mạch, còn PLONK và FFLONK chỉ cần 1 ptau ceremony chung là được.
+
+Khi dùng dùng ZKP với EVM, ta phải code circom rồi dùng ZKSnark sinh proof và hàm verify nhét vào Smart contract để EVM compile. Còn zkEVM hỗ trợ sẵn ZKP, cho phép dev viết SM bằng solidity có ZKP luôn.
+
+
