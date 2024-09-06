@@ -24,8 +24,7 @@ template IsZero() {
     log(1/in);
     log(-in*(1/in) +1);
     inv <-- in!=0 ? 1/in : 0;
-    // Tức là in!=0 thì 1/in sẽ ok trên trường hữu hạn. in=0 thì trả ra 0 luôn. Thực tế ở TH này in = 0 thì 1/in cũng trả ra 0 vì 
-    // groth bỏ qua lỗi và lấy giá trị mặc định là 0
+    // Tức là in!=0 thì 1/in sẽ ok trên trường hữu hạn. in=0 thì trả ra 0 luôn. Thực tế ở TH này in = 0 thì 1/in cũng trả ra 0 vì groth bỏ qua lỗi và lấy giá trị mặc định là 0
     out <== -in*inv +1;
     in*out === 0;
 }

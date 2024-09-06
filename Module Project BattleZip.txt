@@ -19,7 +19,7 @@ SnarkJS hiện tại có thể deploy lên mọi mạng EVM-based mà k cần co
 
 
 
-# Nếu ta tự làm game bắn tàu bằng solidity:
+# Nếu ta tự làm game bắn tàu bằng solidity
 Luật chơi:
 2 bên sắp xếp đội hình
 2 bên bắn lần lượt (hoặc 1 bên bắn trượt thì bên kia được bắn tiếp)
@@ -66,7 +66,6 @@ Với cơ chế bảo mật vẫn giữ nguyên nhưng k cần dựng server mà
 
 # Cơ chế
 -> Solidity
-
 4 hàm logic game:
 - Player 1 create a new game:
 Cung vào 1 board và dùng circom xác thực board đó hợp lệ(các tàu k bị lọt ra ngoài màn)
