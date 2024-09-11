@@ -186,13 +186,6 @@ Mạch circom buộc phải có ít nhất 1 phép nhân. Vì khi compile, groth
 VD ứng dụng circom thực sự có ích: tạo 1 circom nhận private input là private key, public input là address, mạch dùng private key tạo ra address để chứng minh sở hữu private key của 1 address. circom giúp che dấu private input.
 1/0 thì lỗi, 1/in và in = 0 thì không báo lỗi. Signal mặc định là 0. Khi mạch lỗi sẽ bỏ qua nếu dùng <--, nên 1/0 ra 0 chứ kp overflow vì circom tính trên trường hữu hạn
 
--> Phép toán trên trường số hữu hạn:
-1/2 = 10944121435919637611123202872628637544274182200208017171849102093287904247809 = x
-với max trường hữu hạn nguyên là p = 21888242871839275222246405745257275088548364400416034343698204186575808495617
-=> trong circom không tồn tại float point. Nên phép chia thực chất là phép nhân nghịch đảo của số đó modulo p
-Thực vậy: 2*x = 21888242871839275222246405745257275088548364400416034343698204186575808495617 + 1 = 1 (modulo p)
-Tính: 1/2 (mod p) = x => 2*x = 1 (mod p) quy về phép nhân => mà 2 < 1 nên 2*x = 1 + p => x = (p + 1)/2
-
 -> --inspect option: dùng để cải thiện tính secure của mạch
 signal mà k gắn với constraint nào, hoặc gọi 1 component khác có signal như v, hoặc output của component chả dùng trong constraint nào cả sẽ báo warning. Dùng _ <== signal làm mất warning vì ta chủ động bảo compiler là signal này k được dùng trong constraint nào cả
 
@@ -200,6 +193,14 @@ signal mà k gắn với constraint nào, hoặc gọi 1 component khác có sig
 VD: out <-- in / 4;
 out*4 === in;
 => replace thành out <== in/4 
+
+-> Phép toán trên trường số hữu hạn:
+1/2 = 10944121435919637611123202872628637544274182200208017171849102093287904247809 = x
+với max trường hữu hạn nguyên là p = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+=> trong circom không tồn tại float point. Nên phép chia thực chất là phép nhân nghịch đảo của số đó modulo p
+Thực vậy: 2*x = 21888242871839275222246405745257275088548364400416034343698204186575808495617 + 1 = 1 (modulo p)
+Tính: 1/2 (mod p) = x => 2*x = 1 (mod p) quy về phép nhân => mà 2 < 1 nên 2*x = 1 + p => x = (p + 1)/2
+=> ref tới "Module Tornaldo Cash.txt"
 
 
 
